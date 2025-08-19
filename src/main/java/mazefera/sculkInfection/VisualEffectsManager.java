@@ -25,22 +25,41 @@ public class VisualEffectsManager {
 
     // Метод для очищення всіх активних задач
     public void cleanup() {
-        for (BukkitTask task : activeTasks) {
-            if (task != null && !task.isCancelled()) {
-                task.cancel();
+        synchronized (activeTasks) {
+            for (BukkitTask task : new HashSet<>(activeTasks)) {
+                if (task != null && !task.isCancelled()) {
+                    task.cancel();
+                }
             }
+            activeTasks.clear();
         }
-        activeTasks.clear();
+
+        // Також зупиняємо амбієнтну задачу
+        if (ambientTask != null && !ambientTask.isCancelled()) {
+            ambientTask.cancel();
+            ambientTask = null;
+        }
     }
 
     // Допоміжний метод для додавання задач до трекінгу
     private void addTask(BukkitTask task) {
-        activeTasks.add(task);
+        synchronized (activeTasks) {
+            activeTasks.add(task);
+        }
     }
 
     // Допоміжний метод для видалення задач з трекінгу
     private void removeTask(BukkitTask task) {
-        activeTasks.remove(task);
+        synchronized (activeTasks) {
+            activeTasks.remove(task);
+        }
+    }
+
+    // Спрощений метод для самовидалення задачі
+    private void removeSelf(BukkitRunnable runnable) {
+        synchronized (activeTasks) {
+            activeTasks.removeIf(task -> task.getTaskId() == runnable.getTaskId());
+        }
     }
 
     public void createSpiralEffect(Location from, Location to, int duration) {

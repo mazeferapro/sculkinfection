@@ -8,45 +8,94 @@ permissions:
   contents: write
 
 jobs:
-  build-and-deploy:
+  build-and-release:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout deploy branch
+        uses: actions/checkout@v4
+        with:
+          ref: deploy
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Set up JDK 21
-      uses: actions/setup-java@v4
-      with:
-        java-version: '21'
-        distribution: 'temurin'
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
 
-    - name: Cache Maven dependencies
-      uses: actions/cache@v3
-      with:
-        path: ~/.m2
-        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-        restore-keys: ${{ runner.os }}-m2
+      - name: Cache Maven dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
 
-    - name: Build with Maven
-      run: mvn clean package -DskipTests
+      - name: Build with Maven
+        run: mvn clean package -DskipTests
 
-    - name: Get JAR file name
-      id: jar-name
-      run: |
-        JAR_FILE=$(find target -name "*.jar" -not -name "*-sources.jar" -not -name "*-javadoc.jar" | head -1)
-        echo "jar_file=$JAR_FILE" >> $GITHUB_OUTPUT
-        echo "jar_name=$(basename $JAR_FILE)" >> $GITHUB_OUTPUT
+      - name: Get JAR file info
+        id: jar-info
+        run: |
+          JAR_FILE=$(find target -name "*.jar" -not -name "*-sources.jar" -not -name "*-javadoc.jar" | head -1)
+          JAR_NAME=$(basename $JAR_FILE)
+          echo "jar_file=$JAR_FILE" >> $GITHUB_OUTPUT
+          echo "jar_name=$JAR_NAME" >> $GITHUB_OUTPUT
+          echo "Found JAR: $JAR_NAME"
 
-    - name: Deploy JAR to deploy branch
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./target
-        publish_branch: deploy
-        keep_files: false
-        include_files: "*.jar"
-        exclude_files: "*-sources.jar,*-javadoc.jar"
-        commit_message: "Deploy: ${{ steps.jar-name.outputs.jar_name }} from ${{ github.sha }}"
+      - name: Create build archive
+        run: |
+          # Створюємо ZIP архів з усією папкою target
+          zip -r build-artifacts.zip target/
+          echo "Created build archive with all build artifacts"
+
+      - name: Generate release tag
+        id: tag
+        run: |
+          # Генеруємо тег на основі дати та часу
+          TAG="v$(date +'%Y.%m.%d-%H%M%S')"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Generated tag: $TAG"
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          release_name: Release ${{ steps.tag.outputs.tag }}
+          body: |
+            🚀 **Auto-generated release from deploy branch**
+            
+            **Changes:**
+            - Built from deploy branch (commit: ${{ github.sha }})
+            - JAR file: `${{ steps.jar-info.outputs.jar_name }}`
+            
+            **Downloads:**
+            - 📦 **JAR файл**: Завантажте основний JAR файл з Assets нижче
+            - 🗜️ **Build архів**: Завантажте повний ZIP архів з усіма білд артефактами
+            
+            **Commit:** [${{ github.sha }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
+          draft: false
+          prerelease: false
+
+      - name: Upload JAR to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.jar-info.outputs.jar_file }}
+          asset_name: ${{ steps.jar-info.outputs.jar_name }}
+          asset_content_type: application/java-archive
+
+      - name: Upload Build Archive to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build-artifacts.zip
+          asset_name: build-artifacts-${{ steps.tag.outputs.tag }}.zip
+          asset_content_type: application/zip

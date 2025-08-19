@@ -73,7 +73,7 @@ public class MobDeathListener implements Listener {
                             location.getBlockZ() + z
                     );
 
-                    if (block.getType() == Material.SCULK_CATALYST) {
+                    if (block.getType() == Material.SCULK) {
                         // Перевіряємо відстань (сферична область)
                         double distance = block.getLocation().distance(location);
                         if (distance <= radius) {

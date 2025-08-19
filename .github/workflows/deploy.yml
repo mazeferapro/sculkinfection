@@ -3,8 +3,6 @@ name: Deploy JAR to deploy branch
 on:
   push:
     branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
 
 permissions:
   contents: write
@@ -16,6 +14,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Set up JDK 21
       uses: actions/setup-java@v4
@@ -40,27 +40,13 @@ jobs:
         echo "jar_file=$JAR_FILE" >> $GITHUB_OUTPUT
         echo "jar_name=$(basename $JAR_FILE)" >> $GITHUB_OUTPUT
 
-    - name: Upload JAR as artifact
-      uses: actions/upload-artifact@v4
+    - name: Deploy JAR to deploy branch
+      uses: peaceiris/actions-gh-pages@v3
       with:
-        name: sculk-infection-plugin
-        path: ${{ steps.jar-name.outputs.jar_file }}
-
-    - name: Create Release (on main branch only)
-      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: v${{ github.run_number }}
-        name: Release v${{ github.run_number }}
-        body: |
-          Auto-generated release from commit ${{ github.sha }}
-
-          **Changes:** 
-          - Built from latest main branch
-
-          **Download:** Завантажте JAR файл з Assets нижче
-        files: ${{ steps.jar-name.outputs.jar_file }}
-        draft: false
-        prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./target
+        publish_branch: deploy
+        keep_files: false
+        include_files: "*.jar"
+        exclude_files: "*-sources.jar,*-javadoc.jar"
+        commit_message: "Deploy: ${{ steps.jar-name.outputs.jar_name }} from ${{ github.sha }}"

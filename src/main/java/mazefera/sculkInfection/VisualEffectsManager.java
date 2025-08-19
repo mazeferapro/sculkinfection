@@ -4,12 +4,10 @@ import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
-import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
-import java.util.Collection;
 import java.util.Random;
 
 public class VisualEffectsManager {
@@ -35,7 +33,6 @@ public class VisualEffectsManager {
                     return;
                 }
 
-                // Обчислення спіральної траєкторії
                 double x = Math.cos(t * Math.PI * 4) * (1 - t) * 2;
                 double z = Math.sin(t * Math.PI * 4) * (1 - t) * 2;
 
@@ -48,17 +45,25 @@ public class VisualEffectsManager {
                 particleLoc.getWorld().spawnParticle(
                         Particle.SCULK_SOUL,
                         particleLoc,
-                        2,
-                        0.1, 0.1, 0.1,
-                        0.02
+                        5,
+                        0.2, 0.2, 0.2,
+                        0.05
                 );
 
                 particleLoc.getWorld().spawnParticle(
                         Particle.SOUL_FIRE_FLAME,
                         particleLoc,
-                        1,
-                        0.05, 0.05, 0.05,
-                        0.01
+                        3,
+                        0.1, 0.1, 0.1,
+                        0.02
+                );
+
+                particleLoc.getWorld().spawnParticle(
+                        Particle.CRIT,
+                        particleLoc,
+                        2,
+                        0.1, 0.1, 0.1,
+                        0.03
                 );
 
                 t += 0.05;
@@ -77,14 +82,20 @@ public class VisualEffectsManager {
 
             Location particleLoc = center.clone().add(x, 0, z);
 
-            // SCULK_CHARGE потребує Float параметр для roll
             center.getWorld().spawnParticle(
                     Particle.SCULK_CHARGE,
                     particleLoc,
+                    2,
+                    0.1, 0.1, 0.1,
+                    0.2f
+            );
+
+            center.getWorld().spawnParticle(
+                    Particle.CRIT,
+                    particleLoc,
                     1,
-                    0, 0, 0,
-                    0.1,
-                    1.0f // roll parameter для SCULK_CHARGE
+                    0.05, 0.05, 0.05,
+                    0.05
             );
         }
     }
@@ -103,15 +114,14 @@ public class VisualEffectsManager {
                     return;
                 }
 
-                createRingEffect(center, currentRadius, currentRadius * 6);
+                createRingEffect(center, currentRadius, currentRadius * 12);
 
-                // Звуковий ефект
                 if (currentRadius % 2 == 0) {
                     center.getWorld().playSound(
                             center,
                             Sound.BLOCK_SCULK_CATALYST_BLOOM,
-                            0.5f + (currentRadius * 0.1f),
-                            0.8f - (currentRadius * 0.05f)
+                            0.7f + (currentRadius * 0.1f),
+                            0.7f - (currentRadius * 0.03f)
                     );
                 }
 
@@ -127,29 +137,34 @@ public class VisualEffectsManager {
         World world = blockLocation.getWorld();
         Location center = blockLocation.clone().add(0.5, 0.5, 0.5);
 
-        // Використовуємо SCULK_CHARGE_POP замість SCULK_CHARGE
         world.spawnParticle(
                 Particle.SCULK_CHARGE_POP,
+                center,
+                10,
+                0.4, 0.4, 0.4,
+                0.1
+        );
+
+        world.spawnParticle(
+                Particle.WARPED_SPORE,
+                center,
+                15,
+                0.6, 0.6, 0.6,
+                0.02
+        );
+
+        world.spawnParticle(
+                Particle.CRIT,
                 center,
                 5,
                 0.3, 0.3, 0.3,
                 0.05
         );
 
-        // Додаткові частинки для атмосфери
-        world.spawnParticle(
-                Particle.WARPED_SPORE,
-                center,
-                10,
-                0.5, 0.5, 0.5,
-                0.01
-        );
-
-        // Звук
         world.playSound(
                 center,
                 Sound.BLOCK_SCULK_SPREAD,
-                0.4f,
+                0.6f,
                 0.8f + random.nextFloat() * 0.4f
         );
     }
@@ -160,16 +175,14 @@ public class VisualEffectsManager {
     public void createSculkBurst(Location center, int power) {
         World world = center.getWorld();
 
-        // Центральний вибух частинок
         world.spawnParticle(
                 Particle.SCULK_SOUL,
                 center,
-                power * 10,
-                power * 0.5, power * 0.5, power * 0.5,
+                power * 15,
+                power * 0.7, power * 0.7, power * 0.7,
                 0.1
         );
 
-        // Кільця частинок, що розходяться
         new BukkitRunnable() {
             int rings = 0;
 
@@ -181,20 +194,26 @@ public class VisualEffectsManager {
                 }
 
                 double radius = rings * 1.5;
-                for (int i = 0; i < 360; i += 15) {
+                for (int i = 0; i < 360; i += 10) {
                     double angle = Math.toRadians(i);
                     double x = radius * Math.cos(angle);
                     double z = radius * Math.sin(angle);
 
                     Location particleLoc = center.clone().add(x, 0, z);
 
-                    // Використовуємо SONIC_BOOM замість SCULK_CHARGE для кілець
                     world.spawnParticle(
                             Particle.SONIC_BOOM,
                             particleLoc,
-                            1,
+                            2,
                             0, 0, 0,
                             0
+                    );
+                    world.spawnParticle(
+                            Particle.CRIT,
+                            particleLoc,
+                            1,
+                            0.1, 0.1, 0.1,
+                            0.05
                     );
                 }
 
@@ -202,7 +221,6 @@ public class VisualEffectsManager {
             }
         }.runTaskTimer(plugin, 0, 3);
 
-        // Звукові ефекти
         world.playSound(center, Sound.BLOCK_SCULK_SHRIEKER_SHRIEK, 1.0f, 0.5f);
         world.playSound(center, Sound.BLOCK_SCULK_CATALYST_BLOOM, 1.0f, 0.7f);
     }
@@ -235,9 +253,17 @@ public class VisualEffectsManager {
                     particleLoc.getWorld().spawnParticle(
                             Particle.SCULK_SOUL,
                             particleLoc,
+                            3,
+                            0.1, 0.1, 0.1,
+                            0.03
+                    );
+
+                    particleLoc.getWorld().spawnParticle(
+                            Particle.ENCHANTED_HIT,
+                            particleLoc,
                             1,
-                            0.05, 0.05, 0.05,
-                            0.01
+                            0, 0, 0,
+                            0.05
                     );
 
                     distance += 0.3;
@@ -253,7 +279,7 @@ public class VisualEffectsManager {
         new BukkitRunnable() {
             @Override
             public void run() {
-                for (int i = 0; i < 3; i++) {
+                for (int i = 0; i < 5; i++) {
                     double x = center.getX() + (random.nextDouble() - 0.5) * radius * 2;
                     double y = center.getY() + random.nextDouble() * 3;
                     double z = center.getZ() + (random.nextDouble() - 0.5) * radius * 2;
@@ -263,9 +289,17 @@ public class VisualEffectsManager {
                     particleLoc.getWorld().spawnParticle(
                             Particle.WARPED_SPORE,
                             particleLoc,
-                            1,
-                            0, 0, 0,
+                            2,
+                            0.1, 0.1, 0.1,
                             0
+                    );
+
+                    particleLoc.getWorld().spawnParticle(
+                            Particle.SOUL_FIRE_FLAME,
+                            particleLoc,
+                            1,
+                            0.1, 0.1, 0.1,
+                            0.01
                     );
                 }
             }

@@ -1,0 +1,21 @@
+name: SculkInfection
+version: '0.1'
+main: mazefera.sculkInfection.SculkInfection
+api-version: '1.21'
+
+commands:
+  enhancedsculk:
+    description: Основна команда плагіна EnhancedSculk
+    usage: /<command> [reload|info|set|test]
+    aliases: [esculk, es]
+    permission: enhancedsculk.use
+
+permissions:
+  enhancedsculk.use:
+    description: Дозволяє використовувати базові команди плагіна
+    default: op
+  enhancedsculk.admin:
+    description: Дозволяє змінювати налаштування плагіна
+    default: op
+    children:
+      enhancedsculk.use: true

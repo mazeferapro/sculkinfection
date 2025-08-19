@@ -1,0 +1,52 @@
+# EnhancedSculk Configuration
+# Налаштування плагіна для покращення механіки Sculk
+
+# Радіус збору досвіду (XP) від Sculk Catalyst (в блоках)
+# За замовчуванням у ванілі: ~8 блоків
+xp-collection-radius: 16
+
+# Радіус поширення Sculk після поглинання XP (в блоках)
+# Це базовий радіус, який може збільшуватися залежно від кількості XP
+sculk-spread-radius: 5
+
+# Глибина поширення Sculk (вгору та вниз від точки смерті)
+sculk-spread-depth: 3
+
+# Швидкість поширення Sculk (в тіках, 20 тіків = 1 секунда)
+# Менше значення = швидше поширення
+spread-speed-ticks: 2
+
+# Миттєве поширення Sculk (true/false)
+# Якщо true, Sculk поширюється миттєво замість поступового
+instant-spread: false
+
+# Дозволити поширення через повітря (true/false)
+# Якщо true, Sculk може поширюватися через порожні блоки
+spread-through-air: false
+
+# Замінювати всі типи блоків (true/false)
+# Якщо false, замінюються тільки природні блоки (камінь, земля, пісок тощо)
+replace-all-blocks: false
+
+# Шанси появи спеціальних Sculk блоків (0.0 - 1.0)
+# Спеціальні блоки з'являються НАД звичайними Sculk блоками (в повітряному просторі зверху)
+# Умови: під блоком має бути Sculk, над ним - повітря
+sculk-catalyst-chance: 0.03
+sculk-shrieker-chance: 0.01
+sculk-sensor-chance: 0.4
+
+# Додаткові налаштування (можна додати пізніше)
+settings:
+  # Множник XP для збільшення радіусу поширення
+  # Формула: finalRadius = baseRadius * (1 + xpAmount / xp-multiplier)
+  xp-multiplier: 100
+
+  # Візуальні ефекти
+  particles:
+    enabled: true
+    density: 3
+
+  # Звукові ефекти
+  sounds:
+    enabled: true
+    volume: 0.8

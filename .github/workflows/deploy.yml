@@ -1,0 +1,60 @@
+name: Deploy JAR to deploy branch
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+
+    - name: Cache Maven dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+
+    - name: Build with Maven
+      run: mvn clean package -DskipTests
+
+    - name: Get JAR file name
+      id: jar-name
+      run: |
+        JAR_FILE=$(find target -name "*.jar" -not -name "*-sources.jar" -not -name "*-javadoc.jar" | head -1)
+        echo "jar_file=$JAR_FILE" >> $GITHUB_OUTPUT
+        echo "jar_name=$(basename $JAR_FILE)" >> $GITHUB_OUTPUT
+
+    - name: Checkout deploy branch
+      uses: actions/checkout@v4
+      with:
+        ref: deploy
+        path: deploy-branch
+
+    - name: Copy JAR to deploy branch
+      run: |
+        cp ${{ steps.jar-name.outputs.jar_file }} deploy-branch/
+        cd deploy-branch
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add ${{ steps.jar-name.outputs.jar_name }}
+        git commit -m "Auto-deploy: ${{ steps.jar-name.outputs.jar_name }} from ${{ github.sha }}" || exit 0
+
+    - name: Push to deploy branch
+      run: |
+        cd deploy-branch
+        git push origin deploy
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

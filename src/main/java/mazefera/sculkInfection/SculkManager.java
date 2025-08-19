@@ -34,14 +34,48 @@ public class SculkManager {
         this.visualEffects = visualEffects;
     }
 
+    /**
+     * Перевіряє чи є в радіусі відкалібровані скалкові сенсори, які блокують зараження
+     */
+    public boolean isBlockedByCalibratedSensor(Location location) {
+        int blockRadius = configManager.getCalibratedSensorBlockRadius();
+
+        for (int x = -blockRadius; x <= blockRadius; x++) {
+            for (int y = -blockRadius; y <= blockRadius; y++) {
+                for (int z = -blockRadius; z <= blockRadius; z++) {
+                    Location checkLocation = location.clone().add(x, y, z);
+
+                    // Перевіряємо сферичну відстань
+                    double distance = checkLocation.distance(location);
+                    if (distance <= blockRadius) {
+                        Block block = checkLocation.getBlock();
+
+                        // Перевіряємо чи це відкалібрований скалковий сенсор
+                        if (block.getType() == Material.CALIBRATED_SCULK_SENSOR) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
     public void instantSpread(Location center, int radius) {
+        // Перевіряємо блокування відкаліброваними сенсорами
+        if (isBlockedByCalibratedSensor(center)) {
+            return;
+        }
+
         List<Block> blocksToConvert = getBlocksInRadius(center, radius);
 
         // Візуальний ефект вибуху
         visualEffects.createSculkBurst(center, radius);
 
         for (Block block : blocksToConvert) {
-            if (canConvertToSculk(block)) {
+            // Додаткова перевірка для кожного блока - чи не заблокований він сенсором
+            if (canConvertToSculk(block) && !isBlockedByCalibratedSensor(block.getLocation())) {
                 convertToSculk(block);
 
                 // Якщо блок став звичайним Sculk, спробувати створити спеціальні блоки
@@ -58,6 +92,11 @@ public class SculkManager {
     }
 
     public void gradualSpread(Location center, int radius) {
+        // Перевіряємо блокування відкаліброваними сенсорами
+        if (isBlockedByCalibratedSensor(center)) {
+            return;
+        }
+
         List<Block> blocksToConvert = getBlocksInRadius(center, radius);
         Collections.shuffle(blocksToConvert); // Випадковий порядок для природного вигляду
 
@@ -75,7 +114,8 @@ public class SculkManager {
 
                 for (int i = index; i < endIndex; i++) {
                     Block block = blocksToConvert.get(i);
-                    if (canConvertToSculk(block)) {
+                    // Додаткова перевірка для кожного блока - чи не заблокований він сенсором
+                    if (canConvertToSculk(block) && !isBlockedByCalibratedSensor(block.getLocation())) {
                         convertToSculk(block);
 
                         // Якщо блок став звичайним Sculk, спробувати створити спеціальні блоки

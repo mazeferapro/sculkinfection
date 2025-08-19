@@ -101,6 +101,7 @@ public class SculkCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(ChatColor.LIGHT_PURPLE + "Миттєве поширення: " + ChatColor.WHITE + configManager.isInstantSpread());
         sender.sendMessage(ChatColor.LIGHT_PURPLE + "Поширення через повітря: " + ChatColor.WHITE + configManager.shouldSpreadThroughAir());
         sender.sendMessage(ChatColor.LIGHT_PURPLE + "Заміна всіх блоків: " + ChatColor.WHITE + configManager.shouldReplaceAllBlocks());
+        sender.sendMessage(ChatColor.LIGHT_PURPLE + "Радіус блокування відкаліброваним сенсором: " + ChatColor.WHITE + configManager.getCalibratedSensorBlockRadius());
         sender.sendMessage(ChatColor.DARK_PURPLE + "=== Шанси Sculk блоків ===");
         sender.sendMessage(ChatColor.LIGHT_PURPLE + "Каталізатор: " + ChatColor.WHITE + configManager.getSculkCatalystChance());
         sender.sendMessage(ChatColor.LIGHT_PURPLE + "Крикун: " + ChatColor.WHITE + configManager.getSculkShriekerChance());
@@ -158,6 +159,12 @@ public class SculkCommand implements CommandExecutor, TabCompleter {
                     sender.sendMessage(ChatColor.GREEN + "Шанс сенсора встановлено на " + sensorChance);
                     break;
 
+                case "sensor-block-radius":
+                    int blockRadius = Integer.parseInt(value);
+                    configManager.setCalibratedSensorBlockRadius(blockRadius);
+                    sender.sendMessage(ChatColor.GREEN + "Радіус блокування відкаліброваним сенсором встановлено на " + blockRadius);
+                    break;
+
                 default:
                     sender.sendMessage(ChatColor.RED + "Невідомий параметр: " + parameter);
                     break;
@@ -175,7 +182,7 @@ public class SculkCommand implements CommandExecutor, TabCompleter {
             completions.addAll(Arrays.asList("reload", "info", "set", "test"));
         } else if (args.length == 2 && args[0].equalsIgnoreCase("set")) {
             completions.addAll(Arrays.asList("xp-radius", "spread-radius", "spread-depth", "spread-speed", "instant", 
-                "catalyst-chance", "shrieker-chance", "sensor-chance"));
+                "catalyst-chance", "shrieker-chance", "sensor-chance", "sensor-block-radius"));
         }
 
         return completions;

@@ -37,6 +37,11 @@ public class MobDeathListener implements Listener {
         LivingEntity entity = event.getEntity();
         Location deathLocation = entity.getLocation();
 
+        // Перевіряємо чи не заблоковане зараження відкаліброваним сенсором
+        if (sculkManager.isBlockedByCalibratedSensor(deathLocation)) {
+            return;
+        }
+
         // Пошук Sculk Catalyst у збільшеному радіусі
         Block catalyst = findNearbySculkCatalyst(deathLocation);
 
@@ -68,7 +73,7 @@ public class MobDeathListener implements Listener {
                             location.getBlockZ() + z
                     );
 
-                    if (block.getType() == Material.SCULK) {
+                    if (block.getType() == Material.SCULK_CATALYST) {
                         // Перевіряємо відстань (сферична область)
                         double distance = block.getLocation().distance(location);
                         if (distance <= radius) {

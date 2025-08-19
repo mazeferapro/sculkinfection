@@ -30,6 +30,11 @@ public class MobDeathListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onEntityDeath(EntityDeathEvent event) {
+        // Перевіряємо чи плагін увімкнений
+        if (!configManager.isPluginEnabled()) {
+            return;
+        }
+
         if (!(event.getEntity() instanceof LivingEntity)) {
             return;
         }

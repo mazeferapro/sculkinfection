@@ -18,6 +18,17 @@ public class ConfigManager {
         config = plugin.getConfig();
     }
 
+    // Новий метод для перевірки чи плагін увімкнений
+    public boolean isPluginEnabled() {
+        return config.getBoolean("plugin-enabled", false);
+    }
+
+    // Новий метод для встановлення стану плагіна
+    public void setPluginEnabled(boolean enabled) {
+        config.set("plugin-enabled", enabled);
+        plugin.saveConfig();
+    }
+
     public int getXpCollectionRadius() {
         return config.getInt("xp-collection-radius", 16);
     }

@@ -32,8 +32,13 @@ public class SculkInfection extends JavaPlugin {
         getCommand("enhancedsculk").setExecutor(commandExecutor);
         getCommand("enhancedsculk").setTabCompleter(commandExecutor);
 
-        getLogger().info("EnhancedSculk Plugin увімкнено!");
-
+        // Перевіряємо стан плагіна при запуску
+        if (configManager.isPluginEnabled()) {
+            getLogger().info("EnhancedSculk Plugin увімкнено та активний!");
+        } else {
+            getLogger().info("EnhancedSculk Plugin завантажено, але вимкнений за замовчуванням!");
+            getLogger().info("Використайте команду '/enhancedsculk enable' або консольну команду 'enhancedsculk enable' для увімкнення.");
+        }
     }
 
     public VisualEffectsManager getVisualEffects() {

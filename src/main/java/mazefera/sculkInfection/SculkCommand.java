@@ -27,6 +27,35 @@ public class SculkCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        // Команди enable/disable доступні без дозволу для консолі
+        if (args.length > 0 && (args[0].equalsIgnoreCase("enable") || args[0].equalsIgnoreCase("disable"))) {
+            if (sender instanceof Player && !sender.hasPermission("enhancedsculk.admin")) {
+                sender.sendMessage(ChatColor.RED + "У вас немає дозволу на використання цієї команди!");
+                return true;
+            }
+
+            switch (args[0].toLowerCase()) {
+                case "enable":
+                    configManager.setPluginEnabled(true);
+                    sender.sendMessage(ChatColor.GREEN + "EnhancedSculk плагін увімкнено!");
+                    plugin.getLogger().info("EnhancedSculk увімкнено через команду!");
+                    break;
+
+                case "disable":
+                    configManager.setPluginEnabled(false);
+                    sender.sendMessage(ChatColor.YELLOW + "EnhancedSculk плагін вимкнено!");
+                    plugin.getLogger().info("EnhancedSculk вимкнено через команду!");
+                    break;
+            }
+            return true;
+        }
+
+        // Перевіряємо чи плагін увімкнений для інших команд
+        if (!configManager.isPluginEnabled()) {
+            sender.sendMessage(ChatColor.RED + "EnhancedSculk плагін наразі вимкнений! Використайте /enhancedsculk enable для увімкнення.");
+            return true;
+        }
+
         if (!sender.hasPermission("enhancedsculk.admin")) {
             sender.sendMessage(ChatColor.RED + "У вас немає дозволу на використання цієї команди!");
             return true;
@@ -86,14 +115,26 @@ public class SculkCommand implements CommandExecutor, TabCompleter {
 
     private void showHelp(CommandSender sender) {
         sender.sendMessage(ChatColor.DARK_PURPLE + "=== EnhancedSculk Команди ===");
-        sender.sendMessage(ChatColor.LIGHT_PURPLE + "/enhancedsculk reload" + ChatColor.WHITE + " - Перезавантажити конфігурацію");
-        sender.sendMessage(ChatColor.LIGHT_PURPLE + "/enhancedsculk info" + ChatColor.WHITE + " - Показати поточні налаштування");
-        sender.sendMessage(ChatColor.LIGHT_PURPLE + "/enhancedsculk set <параметр> <значення>" + ChatColor.WHITE + " - Змінити налаштування");
-        sender.sendMessage(ChatColor.LIGHT_PURPLE + "/enhancedsculk test" + ChatColor.WHITE + " - Тестове поширення Sculk");
+
+        // Команди керування плагіном (доступні завжди)
+        sender.sendMessage(ChatColor.GOLD + "/enhancedsculk enable" + ChatColor.WHITE + " - Увімкнути плагін");
+        sender.sendMessage(ChatColor.GOLD + "/enhancedsculk disable" + ChatColor.WHITE + " - Вимкнути плагін");
+
+        // Інші команди (доступні тільки якщо плагін увімкнений)
+        if (configManager.isPluginEnabled()) {
+            sender.sendMessage(ChatColor.LIGHT_PURPLE + "/enhancedsculk reload" + ChatColor.WHITE + " - Перезавантажити конфігурацію");
+            sender.sendMessage(ChatColor.LIGHT_PURPLE + "/enhancedsculk info" + ChatColor.WHITE + " - Показати поточні налаштування");
+            sender.sendMessage(ChatColor.LIGHT_PURPLE + "/enhancedsculk set <параметр> <значення>" + ChatColor.WHITE + " - Змінити налаштування");
+            sender.sendMessage(ChatColor.LIGHT_PURPLE + "/enhancedsculk test" + ChatColor.WHITE + " - Тестове поширення Sculk");
+        } else {
+            sender.sendMessage(ChatColor.RED + "Плагін вимкнений. Використайте enable для увімкнення інших функцій.");
+        }
     }
 
     private void showInfo(CommandSender sender) {
         sender.sendMessage(ChatColor.DARK_PURPLE + "=== Поточні налаштування ===");
+        sender.sendMessage(ChatColor.GOLD + "Стан плагіна: " + ChatColor.WHITE + (configManager.isPluginEnabled() ?
+                ChatColor.GREEN + "УВІМКНЕНИЙ" : ChatColor.RED + "ВИМКНЕНИЙ"));
         sender.sendMessage(ChatColor.LIGHT_PURPLE + "Радіус збору XP: " + ChatColor.WHITE + configManager.getXpCollectionRadius());
         sender.sendMessage(ChatColor.LIGHT_PURPLE + "Радіус поширення Sculk: " + ChatColor.WHITE + configManager.getSculkSpreadRadius());
         sender.sendMessage(ChatColor.LIGHT_PURPLE + "Глибина поширення: " + ChatColor.WHITE + configManager.getSculkSpreadDepth());
@@ -179,10 +220,10 @@ public class SculkCommand implements CommandExecutor, TabCompleter {
         List<String> completions = new ArrayList<>();
 
         if (args.length == 1) {
-            completions.addAll(Arrays.asList("reload", "info", "set", "test"));
+            completions.addAll(Arrays.asList("enable", "disable", "reload", "info", "set", "test"));
         } else if (args.length == 2 && args[0].equalsIgnoreCase("set")) {
-            completions.addAll(Arrays.asList("xp-radius", "spread-radius", "spread-depth", "spread-speed", "instant", 
-                "catalyst-chance", "shrieker-chance", "sensor-chance", "sensor-block-radius"));
+            completions.addAll(Arrays.asList("xp-radius", "spread-radius", "spread-depth", "spread-speed", "instant",
+                    "catalyst-chance", "shrieker-chance", "sensor-chance", "sensor-block-radius"));
         }
 
         return completions;

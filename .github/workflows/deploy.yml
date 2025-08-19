@@ -1,4 +1,4 @@
-name: Deploy JAR to deploy branch
+name: Build and Release JAR
 
 on:
   push:
@@ -12,11 +12,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout deploy branch
+      - name: Checkout source code
         uses: actions/checkout@v4
         with:
-          ref: deploy
-          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: main   # або master, якщо у вас master основна гілка
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -45,14 +44,12 @@ jobs:
 
       - name: Create build archive
         run: |
-          # Створюємо ZIP архів з усією папкою target
           zip -r build-artifacts.zip target/
           echo "Created build archive with all build artifacts"
 
       - name: Generate release tag
         id: tag
         run: |
-          # Генеруємо тег на основі дати та часу
           TAG="v$(date +'%Y.%m.%d-%H%M%S')"
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "Generated tag: $TAG"
@@ -66,10 +63,10 @@ jobs:
           tag_name: ${{ steps.tag.outputs.tag }}
           release_name: Release ${{ steps.tag.outputs.tag }}
           body: |
-            🚀 **Auto-generated release from deploy branch**
+            🚀 **Auto-generated release from main branch**
             
             **Changes:**
-            - Built from deploy branch (commit: ${{ github.sha }})
+            - Built from main branch (commit: ${{ github.sha }})
             - JAR file: `${{ steps.jar-info.outputs.jar_name }}`
             
             **Downloads:**

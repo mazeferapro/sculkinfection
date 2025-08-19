@@ -43,10 +43,6 @@ public class SculkInfection extends JavaPlugin {
     @Override
     public void onDisable() {
         getLogger().info("EnhancedSculk Plugin вимкнено!");
-        if (visualEffects != null) {
-            visualEffects.cleanup(); // Критично важливо!
-            visualEffects.stopAmbientEffects();
-        }
     }
 
     public static SculkInfection getInstance() {

@@ -37,24 +37,20 @@ jobs:
         echo "jar_file=$JAR_FILE" >> $GITHUB_OUTPUT
         echo "jar_name=$(basename $JAR_FILE)" >> $GITHUB_OUTPUT
 
-    - name: Checkout deploy branch
-      uses: actions/checkout@v4
-      with:
-        ref: deploy
-        path: deploy-branch
-
-    - name: Copy JAR to deploy branch
+    - name: Create and checkout deploy branch
       run: |
-        cp ${{ steps.jar-name.outputs.jar_file }} deploy-branch/
-        cd deploy-branch
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
+        git config --global user.email "action@github.com"
+        git config --global user.name "GitHub Action"
+        git fetch origin deploy:deploy 2>/dev/null || git checkout -b deploy
+        git checkout deploy
+
+    - name: Copy JAR and commit
+      run: |
+        cp ${{ steps.jar-name.outputs.jar_file }} .
         git add ${{ steps.jar-name.outputs.jar_name }}
-        git commit -m "Auto-deploy: ${{ steps.jar-name.outputs.jar_name }} from ${{ github.sha }}" || exit 0
+        git commit -m "Auto-deploy: ${{ steps.jar-name.outputs.jar_name }} from ${{ github.sha }}" || echo "No changes to commit"
 
     - name: Push to deploy branch
-      run: |
-        cd deploy-branch
-        git push origin deploy
+      run: git push origin deploy
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

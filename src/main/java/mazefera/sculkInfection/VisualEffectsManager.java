@@ -6,32 +6,57 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
+import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 
 public class VisualEffectsManager {
 
     private final JavaPlugin plugin;
     private final Random random = new Random();
+    private final Set<BukkitTask> activeTasks = new HashSet<>();
 
     public VisualEffectsManager(JavaPlugin plugin) {
         this.plugin = plugin;
     }
 
+    // Метод для очищення всіх активних задач
+    public void cleanup() {
+        for (BukkitTask task : activeTasks) {
+            if (task != null && !task.isCancelled()) {
+                task.cancel();
+            }
+        }
+        activeTasks.clear();
+    }
+
+    // Допоміжний метод для додавання задач до трекінгу
+    private void addTask(BukkitTask task) {
+        activeTasks.add(task);
+    }
+
+    // Допоміжний метод для видалення задач з трекінгу
+    private void removeTask(BukkitTask task) {
+        activeTasks.remove(task);
+    }
+
     public void createSpiralEffect(Location from, Location to, int duration) {
-        new BukkitRunnable() {
+        if (from.getWorld() == null || to.getWorld() == null) return;
+
+        BukkitTask task = new BukkitRunnable() {
             double t = 0;
+            final World world = from.getWorld();
 
             @Override
             public void run() {
-                if (t > 1) {
-                    this.cancel();
-                    return;
-                }
-
-                World world = from.getWorld();
-                if (world == null) {
+                if (t > 1 || world == null) {
+                    removeTask(this.getTaskId() != -1 ?
+                            plugin.getServer().getScheduler().getPendingTasks().stream()
+                                    .filter(bt -> bt.getTaskId() == this.getTaskId())
+                                    .findFirst().orElse(null) : null);
                     this.cancel();
                     return;
                 }
@@ -52,6 +77,8 @@ public class VisualEffectsManager {
                 t += 0.05;
             }
         }.runTaskTimer(plugin, 0, 1);
+
+        addTask(task);
     }
 
     public void createRingEffect(Location center, double radius, int particles) {
@@ -71,13 +98,19 @@ public class VisualEffectsManager {
     }
 
     public void createPulseEffect(Location center, int maxRadius) {
-        new BukkitRunnable() {
+        if (center.getWorld() == null) return;
+
+        BukkitTask task = new BukkitRunnable() {
             int currentRadius = 0;
+            final World world = center.getWorld();
 
             @Override
             public void run() {
-                World world = center.getWorld();
                 if (world == null || currentRadius > maxRadius) {
+                    removeTask(this.getTaskId() != -1 ?
+                            plugin.getServer().getScheduler().getPendingTasks().stream()
+                                    .filter(bt -> bt.getTaskId() == this.getTaskId())
+                                    .findFirst().orElse(null) : null);
                     this.cancel();
                     return;
                 }
@@ -93,6 +126,8 @@ public class VisualEffectsManager {
                 currentRadius++;
             }
         }.runTaskTimer(plugin, 0, 2);
+
+        addTask(task);
     }
 
     public void createInfectionEffect(Location blockLocation) {
@@ -114,12 +149,16 @@ public class VisualEffectsManager {
 
         world.spawnParticle(Particle.SCULK_SOUL, center, power * 15, power * 0.7, power * 0.7, power * 0.7, 0.1);
 
-        new BukkitRunnable() {
+        BukkitTask task = new BukkitRunnable() {
             int rings = 0;
 
             @Override
             public void run() {
                 if (world == null || rings > power) {
+                    removeTask(this.getTaskId() != -1 ?
+                            plugin.getServer().getScheduler().getPendingTasks().stream()
+                                    .filter(bt -> bt.getTaskId() == this.getTaskId())
+                                    .findFirst().orElse(null) : null);
                     this.cancel();
                     return;
                 }
@@ -139,6 +178,8 @@ public class VisualEffectsManager {
             }
         }.runTaskTimer(plugin, 0, 3);
 
+        addTask(task);
+
         world.playSound(center, Sound.BLOCK_SCULK_SHRIEKER_SHRIEK, 1.0f, 0.5f);
         world.playSound(center, Sound.BLOCK_SCULK_CATALYST_BLOOM, 1.0f, 0.7f);
     }
@@ -154,12 +195,16 @@ public class VisualEffectsManager {
                     random.nextDouble() - 0.5
             ).normalize();
 
-            new BukkitRunnable() {
+            BukkitTask task = new BukkitRunnable() {
                 double distance = 0;
 
                 @Override
                 public void run() {
-                    if (distance > length) {
+                    if (distance > length || world == null) {
+                        removeTask(this.getTaskId() != -1 ?
+                                plugin.getServer().getScheduler().getPendingTasks().stream()
+                                        .filter(bt -> bt.getTaskId() == this.getTaskId())
+                                        .findFirst().orElse(null) : null);
                         this.cancel();
                         return;
                     }
@@ -171,16 +216,35 @@ public class VisualEffectsManager {
                     distance += 0.3;
                 }
             }.runTaskTimer(plugin, i * 2, 1);
+
+            addTask(task);
         }
     }
+
+    private BukkitTask ambientTask = null;
 
     public void createAmbientSculkParticles(Location center, int radius) {
         World world = center.getWorld();
         if (world == null) return;
 
-        new BukkitRunnable() {
+        // Зупиняємо попередню амбієнтну задачу якщо вона існує
+        if (ambientTask != null && !ambientTask.isCancelled()) {
+            ambientTask.cancel();
+            removeTask(ambientTask);
+        }
+
+        ambientTask = new BukkitRunnable() {
             @Override
             public void run() {
+                if (world == null) {
+                    removeTask(this.getTaskId() != -1 ?
+                            plugin.getServer().getScheduler().getPendingTasks().stream()
+                                    .filter(bt -> bt.getTaskId() == this.getTaskId())
+                                    .findFirst().orElse(null) : null);
+                    this.cancel();
+                    return;
+                }
+
                 for (int i = 0; i < 5; i++) {
                     double x = center.getX() + (random.nextDouble() - 0.5) * radius * 2;
                     double y = center.getY() + random.nextDouble() * 3;
@@ -192,5 +256,16 @@ public class VisualEffectsManager {
                 }
             }
         }.runTaskTimer(plugin, 0, 10);
+
+        addTask(ambientTask);
+    }
+
+    // Метод для зупинки амбієнтних ефектів
+    public void stopAmbientEffects() {
+        if (ambientTask != null && !ambientTask.isCancelled()) {
+            ambientTask.cancel();
+            removeTask(ambientTask);
+            ambientTask = null;
+        }
     }
 }

@@ -40,19 +40,27 @@ jobs:
         echo "jar_file=$JAR_FILE" >> $GITHUB_OUTPUT
         echo "jar_name=$(basename $JAR_FILE)" >> $GITHUB_OUTPUT
 
-    - name: Create and checkout deploy branch
-      run: |
-        git config --global user.email "action@github.com"
-        git config --global user.name "GitHub Action"
-        git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-        git fetch origin deploy:deploy 2>/dev/null || git checkout -b deploy
-        git checkout deploy
+    - name: Upload JAR as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: sculk-infection-plugin
+        path: ${{ steps.jar-name.outputs.jar_file }}
 
-    - name: Copy JAR and commit
-      run: |
-        cp ${{ steps.jar-name.outputs.jar_file }} .
-        git add ${{ steps.jar-name.outputs.jar_name }}
-        git commit -m "Auto-deploy: ${{ steps.jar-name.outputs.jar_name }} from ${{ github.sha }}" || echo "No changes to commit"
+    - name: Create Release (on main branch only)
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ github.run_number }}
+        name: Release v${{ github.run_number }}
+        body: |
+          Auto-generated release from commit ${{ github.sha }}
 
-    - name: Push to deploy branch
-      run: git push origin deploy
+          **Changes:** 
+          - Built from latest main branch
+
+          **Download:** Завантажте JAR файл з Assets нижче
+        files: ${{ steps.jar-name.outputs.jar_file }}
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

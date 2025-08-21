@@ -13,6 +13,7 @@ import org.bukkit.entity.Zombie;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockRedstoneEvent;
+import org.bukkit.event.entity.EntityInteractEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -62,39 +63,20 @@ public class SculkMobManager implements Listener {
      * Обробляє спавн від Sculk Shrieker
      */
     @EventHandler
-    public void onPlayerNearShrieker(PlayerMoveEvent event) {
-        if (!configManager.isPluginEnabled()) {
-            return;
-        }
+    public void onEntityInteract(EntityInteractEvent event) {
+        Block block = event.getBlock();
+        if (block.getType() != Material.SCULK_SHRIEKER) return;
 
-        Player player = event.getPlayer();
-        Location playerLoc = player.getLocation();
+        String blockKey = getBlockKey(block.getLocation());
+        long currentTime = System.currentTimeMillis();
+        long cooldownTime = configManager.getShriekerCooldownMinutes() * 60 * 1000;
 
-        // Перевіряємо блоки в радіусі 3 блоків навколо гравця
-        for (int x = -3; x <= 3; x++) {
-            for (int y = -2; y <= 2; y++) {
-                for (int z = -3; z <= 3; z++) {
-                    Location checkLoc = playerLoc.clone().add(x, y, z);
-                    Block block = checkLoc.getBlock();
+        if (!shriekerCooldowns.containsKey(blockKey) ||
+                currentTime - shriekerCooldowns.get(blockKey) >= cooldownTime) {
 
-                    if (block.getType() == Material.SCULK_SHRIEKER) {
-                        String blockKey = getBlockKey(block.getLocation());
-                        long currentTime = System.currentTimeMillis();
-                        long cooldownTime = configManager.getShriekerCooldownMinutes() * 60 * 1000; // в мілісекундах
+            shriekerCooldowns.put(blockKey, currentTime);
 
-                        // Перевіряємо кулдаун
-                        if (!shriekerCooldowns.containsKey(blockKey) ||
-                                currentTime - shriekerCooldowns.get(blockKey) >= cooldownTime) {
-
-                            // Оновлюємо кулдаун
-                            shriekerCooldowns.put(blockKey, currentTime);
-
-                            // Спавнимо 4 зомбі
-                            spawnInfectedZombie(block.getLocation(), 4);
-                        }
-                    }
-                }
-            }
+            spawnInfectedZombie(block.getLocation(), 4);
         }
     }
 
@@ -108,7 +90,7 @@ public class SculkMobManager implements Listener {
             if (spawnLoc == null) continue;
 
             // Створюємо зомбі
-            Zombie zombie = (Zombie) spawnLoc.getWorld().spawnEntity(spawnLoc, EntityType.ZOMBIE);
+            Zombie zombie = (Zombie) spawnLoc.getWorld().spawnEntity(spawnLoc, EntityType.HUSK);
 
             // Налаштовуємо зомбі
             setupInfectedZombie(zombie);
@@ -116,8 +98,6 @@ public class SculkMobManager implements Listener {
             // Додаємо до списку відстеження
             infectedZombies.put(zombie.getUniqueId(), System.currentTimeMillis());
 
-            // Рух від зони скалку
-            moveAwayFromSculk(zombie, location);
         }
     }
 
@@ -140,37 +120,6 @@ public class SculkMobManager implements Listener {
 
         // Не може піднімати предмети
         zombie.setCanPickupItems(false);
-    }
-
-    /**
-     * Змушує зомбі рухатися від зони скалку
-     */
-    private void moveAwayFromSculk(Zombie zombie, Location sculkCenter) {
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (zombie.isDead() || !zombie.isValid()) {
-                    this.cancel();
-                    return;
-                }
-
-                // Знаходимо напрямок від центру скалку
-                Vector direction = zombie.getLocation().toVector()
-                        .subtract(sculkCenter.toVector())
-                        .normalize()
-                        .multiply(0.5);
-
-                // Додаємо випадковість
-                direction.add(new Vector(
-                        (random.nextDouble() - 0.5) * 0.3,
-                        0,
-                        (random.nextDouble() - 0.5) * 0.3
-                ));
-
-                // Застосовуємо швидкість
-                zombie.setVelocity(direction);
-            }
-        }.runTaskTimer(plugin, 0, 20); // Кожну секунду
     }
 
     /**

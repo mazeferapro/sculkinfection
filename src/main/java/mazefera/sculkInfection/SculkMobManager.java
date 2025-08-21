@@ -63,20 +63,23 @@ public class SculkMobManager implements Listener {
      * Обробляє спавн від Sculk Shrieker
      */
     @EventHandler
-    public void onEntityInteract(EntityInteractEvent event) {
+    public void onShriekerRedstone(BlockRedstoneEvent event) {
         Block block = event.getBlock();
+
         if (block.getType() != Material.SCULK_SHRIEKER) return;
 
-        String blockKey = getBlockKey(block.getLocation());
-        long currentTime = System.currentTimeMillis();
-        long cooldownTime = configManager.getShriekerCooldownMinutes() * 60 * 1000;
+        // сигнал змінився з 0 на >0
+        if (event.getOldCurrent() == 0 && event.getNewCurrent() > 0) {
+            String blockKey = getBlockKey(block.getLocation());
+            long currentTime = System.currentTimeMillis();
+            long cooldownTime = (long) configManager.getShriekerCooldownMinutes() * 60 * 1000;
 
-        if (!shriekerCooldowns.containsKey(blockKey) ||
-                currentTime - shriekerCooldowns.get(blockKey) >= cooldownTime) {
+            if (!shriekerCooldowns.containsKey(blockKey) ||
+                    currentTime - shriekerCooldowns.get(blockKey) >= cooldownTime) {
 
-            shriekerCooldowns.put(blockKey, currentTime);
-
-            spawnInfectedZombie(block.getLocation(), 4);
+                shriekerCooldowns.put(blockKey, currentTime);
+                spawnInfectedZombie(block.getLocation(), 4);
+            }
         }
     }
 

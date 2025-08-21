@@ -60,8 +60,6 @@ public class MobDeathListener implements Listener {
             // Активуємо поширення Sculk
             handleSculkSpread(catalyst.getLocation(), deathLocation, totalXP);
 
-            // Створюємо візуальний ефект (частинки)
-            createSculkParticles(catalyst.getLocation(), deathLocation);
         }
     }
 
@@ -107,10 +105,5 @@ public class MobDeathListener implements Listener {
         } else {
             sculkManager.gradualSpread(deathLocation, finalRadius);
         }
-    }
-
-    private void createSculkParticles(Location catalystLocation, Location deathLocation) {
-        // Візуальні ефекти вже обробляються в VisualEffectsManager
-        // Цей метод можна видалити або залишити для додаткових ефектів
     }
 }

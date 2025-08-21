@@ -42,24 +42,22 @@ public class MobDeathListener implements Listener {
         LivingEntity entity = event.getEntity();
         Location deathLocation = entity.getLocation();
 
-        // Перевіряємо чи не заблоковане зараження відкаліброваним сенсором
         if (sculkManager.isBlockedByCalibratedSensor(deathLocation)) {
             return;
         }
 
-        // Пошук Sculk Catalyst у збільшеному радіусі
+        if (entity.getCustomName() != null && entity.getCustomName().contains("Sculk Infected")) {
+            int radius = configManager.getSculkSpreadRadius(); // новий параметр у config.yml
+            sculkManager.instantSpread(deathLocation, radius-2);
+            return;
+        }
+
         Block catalyst = findNearbySculkCatalyst(deathLocation);
 
         if (catalyst != null) {
-            // Збираємо весь XP
             int totalXP = event.getDroppedExp();
-
-            // Видаляємо стандартний XP drop
             event.setDroppedExp(0);
-
-            // Активуємо поширення Sculk
             handleSculkSpread(catalyst.getLocation(), deathLocation, totalXP);
-
         }
     }
 
@@ -92,7 +90,7 @@ public class MobDeathListener implements Listener {
 
     private void handleSculkSpread(Location catalystLocation, Location deathLocation, int xpAmount) {
         // Розраховуємо модифікатор на основі кількості XP
-        double xpModifier = 1.0 + (xpAmount / 100.0); // Кожні 100 XP додають +1 до радіусу
+        double xpModifier = 1.0 + ((double) xpAmount / configManager.getXpMultiplier()); // Кожні 100 XP додають +1 до радіусу
 
         int finalRadius = (int) (configManager.getSculkSpreadRadius() * xpModifier);
 

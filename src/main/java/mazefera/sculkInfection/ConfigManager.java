@@ -154,6 +154,10 @@ public class ConfigManager {
         return config.getInt("zombie-lifetime-seconds", 30);
     }
 
+    public int getXpMultiplier() {
+        return config.getInt("settings.xp-multiplier", 100);
+    }
+
     public void setZombieLifetimeSeconds(int seconds) {
         config.set("zombie-lifetime-seconds", seconds);
         plugin.saveConfig();

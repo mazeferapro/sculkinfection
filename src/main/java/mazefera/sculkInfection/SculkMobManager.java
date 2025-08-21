@@ -1,5 +1,6 @@
 package mazefera.sculkInfection;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -40,6 +41,8 @@ public class SculkMobManager implements Listener {
 
         // Запускаємо задачу для видалення старих зомбі
         startZombieCleanupTask();
+
+        startZombieTargetingTask();
     }
 
     /**
@@ -73,9 +76,9 @@ public class SculkMobManager implements Listener {
 
         Location playerLoc = player.getLocation();
 
-        for (int x = -3; x <= 3; x++) {
+        for (int x = -6; x <= 6; x++) {
             for (int y = -2; y <= 2; y++) {
-                for (int z = -3; z <= 3; z++) {
+                for (int z = -6; z <= 6; z++) {
                     Location checkLoc = playerLoc.clone().add(x, y, z);
                     Block block = checkLoc.getBlock();
 
@@ -92,7 +95,7 @@ public class SculkMobManager implements Listener {
                             shriekerCooldowns.put(blockKey, currentTime);
 
                             // Спавнимо 4 зомбі
-                            spawnInfectedZombie(block.getLocation(), 4);
+                            spawnInfectedZombie(block.getLocation(), configManager.getShriekerZombieSpawnCount());
                         }
                     }
                 }
@@ -125,62 +128,68 @@ public class SculkMobManager implements Listener {
      * Налаштовує зараженого зомбі
      */
     private void setupInfectedZombie(Zombie zombie) {
-        // Встановлюємо назву
+        double weaknessFactor = configManager.getZombieWeakness();
+
         zombie.setCustomName(ChatColor.DARK_GREEN + "Sculk Infected");
         zombie.setCustomNameVisible(true);
 
-        // Робимо зомбі в 10 разів слабшим
-        zombie.getAttribute(Attribute.MAX_HEALTH).setBaseValue(2.0); // 20/10 = 2
-        zombie.setHealth(2.0);
-        zombie.getAttribute(Attribute.ATTACK_DAMAGE).setBaseValue(0.3); // 3/10 = 0.3
+        var maxHealth = zombie.getAttribute(Attribute.MAX_HEALTH);
+        if (maxHealth != null) {
+            double newMaxHealth = maxHealth.getBaseValue() / weaknessFactor;
+            maxHealth.setBaseValue(newMaxHealth);
+            zombie.setHealth(newMaxHealth);
+        }
 
-        // Робимо трохи швидшим для компенсації слабкості
-        zombie.getAttribute(Attribute.MOVEMENT_SPEED).setBaseValue(0.3);
+        var attackDamage = zombie.getAttribute(Attribute.ATTACK_DAMAGE);
+        if (attackDamage != null) {
+            attackDamage.setBaseValue(attackDamage.getBaseValue() / weaknessFactor);
+        }
 
+        var movementSpeed = zombie.getAttribute(Attribute.MOVEMENT_SPEED);
+        if (movementSpeed != null) {
+            movementSpeed.setBaseValue(0.3);
+        }
 
-        // Не може піднімати предмети
         zombie.setCanPickupItems(false);
     }
 
-    /**
-     * Обробляє таргетинг зомбі
-     */
-    @EventHandler
-    public void onEntityTarget(EntityTargetEvent event) {
-        if (!configManager.isPluginEnabled()) {
-            return;
-        }
+    private void startZombieTargetingTask() {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                double radius = configManager.getZombieSeekRadius();
 
-        if (!(event.getEntity() instanceof Zombie)) {
-            return;
-        }
+                for (UUID zombieId : infectedZombies.keySet()) {
+                    Entity entity = Bukkit.getEntity(zombieId);
+                    if (!(entity instanceof Zombie zombie)) continue;
+                    if (zombie.isDead()) continue;
 
-        Zombie zombie = (Zombie) event.getEntity();
+                    // Знаходимо найближчу ціль
+                    LivingEntity nearestTarget = zombie.getWorld().getEntities().stream()
+                            .filter(e -> e instanceof LivingEntity)
+                            .map(e -> (LivingEntity) e)
+                            .filter(e -> {
+                                // Виключаємо союзників
+                                if (e instanceof Zombie && isInfectedZombie((Zombie) e)) return false;
 
-        // Перевіряємо чи це заражений зомбі
-        if (!isInfectedZombie(zombie)) {
-            return;
-        }
+                                if (e instanceof Player player) {
+                                    switch (player.getGameMode()) {
+                                        case CREATIVE, SPECTATOR -> { return false; }
+                                    }
+                                }
 
-        // Отримуємо всіх живих істот поблизу (радіус можна налаштувати)
-        double radius = 10.0; // наприклад, 10 блоків
-        List<LivingEntity> nearbyEntities;
-        nearbyEntities = zombie.getWorld().getEntities().stream()
-                .filter(e -> e instanceof LivingEntity)
-                .map(e -> (LivingEntity) e)
-                .filter(e -> !isInfectedZombie((Zombie) e)) // виключаємо союзників
-                .filter(e -> e.getLocation().distance(zombie.getLocation()) <= radius)
-                .sorted(Comparator.comparingDouble(e -> e.getLocation().distance(zombie.getLocation())))
-                .toList();
+                                return true;
+                            })
+                            .filter(e -> e.getLocation().distance(zombie.getLocation()) <= radius)
+                            .min(Comparator.comparingDouble(e -> e.getLocation().distance(zombie.getLocation())))
+                            .orElse(null);
 
-        if (!nearbyEntities.isEmpty()) {
-            // Встановлюємо найближчу ціль
-            zombie.setTarget(nearbyEntities.get(0));
-        } else {
-            // Якщо ціль відсутня, скасовуємо таргетинг
-            event.setCancelled(true);
-        }
+                    zombie.setTarget(nearestTarget);
+                }
+            }
+        }.runTaskTimer(plugin, 0, 20);
     }
+
 
 
     /**
@@ -233,7 +242,7 @@ public class SculkMobManager implements Listener {
             @Override
             public void run() {
                 long currentTime = System.currentTimeMillis();
-                long maxLifetime = 30 * 1000; // 30 секунд в мілісекундах
+                long maxLifetime = configManager.getZombieLifetimeSeconds() * 1000;
 
                 infectedZombies.entrySet().removeIf(entry -> {
                     UUID zombieId = entry.getKey();

@@ -138,6 +138,18 @@ public class ConfigManager {
         plugin.saveConfig();
     }
 
+    public int getShriekerZombieSpawnCount() {
+        return config.getInt("settings.mobs.shrieker-spawn-count", 4);
+    }
+
+    public int getZombieSeekRadius() {
+        return config.getInt("settings.mobs.zombie-seek-radius", 10);
+    }
+
+    public int getZombieWeakness() {
+        return config.getInt("settings.mobs.zombie-weakness-multiplier", 10);
+    }
+
     public int getZombieLifetimeSeconds() {
         return config.getInt("zombie-lifetime-seconds", 30);
     }

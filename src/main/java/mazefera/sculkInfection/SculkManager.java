@@ -233,18 +233,4 @@ public class SculkManager {
             blockAbove.setType(Material.SCULK_SENSOR);
         }
     }
-
-    // Метод для створення Sculk Sensor або Shrieker з певною ймовірністю
-    public void tryCreateSpecialSculk(Location location, double chance) {
-        if (random.nextDouble() < chance) {
-            Block block = location.getBlock();
-            if (canConvertToSculk(block)) {
-                if (random.nextBoolean()) {
-                    block.setType(Material.SCULK_SENSOR);
-                } else {
-                    block.setType(Material.SCULK_SHRIEKER);
-                }
-            }
-        }
-    }
 }

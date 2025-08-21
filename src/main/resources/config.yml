@@ -79,4 +79,4 @@ settings:
     zombie-weakness-multiplier: 10
 
     # Радіус відходження зомбі від зони sculk
-    zombie-escape-radius: 10
+    zombie-seek-radius: 10

@@ -20,10 +20,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 
 public class SculkMobManager implements Listener {
 
@@ -165,17 +162,26 @@ public class SculkMobManager implements Listener {
             return;
         }
 
-        // Якщо ціль - інший заражений зомбі, відміняємо таргетинг
-        if (event.getTarget() instanceof Zombie && isInfectedZombie((Zombie) event.getTarget())) {
-            event.setCancelled(true);
-            return;
-        }
+        // Отримуємо всіх живих істот поблизу (радіус можна налаштувати)
+        double radius = 10.0; // наприклад, 10 блоків
+        List<LivingEntity> nearbyEntities;
+        nearbyEntities = zombie.getWorld().getEntities().stream()
+                .filter(e -> e instanceof LivingEntity)
+                .map(e -> (LivingEntity) e)
+                .filter(e -> !isInfectedZombie((Zombie) e)) // виключаємо союзників
+                .filter(e -> e.getLocation().distance(zombie.getLocation()) <= radius)
+                .sorted(Comparator.comparingDouble(e -> e.getLocation().distance(zombie.getLocation())))
+                .toList();
 
-        // Заражені зомбі агресивні до всіх інших мобів та гравців
-        if (event.getTarget() instanceof LivingEntity) {
-            // Дозволяємо таргетинг
+        if (!nearbyEntities.isEmpty()) {
+            // Встановлюємо найближчу ціль
+            zombie.setTarget(nearbyEntities.get(0));
+        } else {
+            // Якщо ціль відсутня, скасовуємо таргетинг
+            event.setCancelled(true);
         }
     }
+
 
     /**
      * Перевіряє чи зомбі заражений
@@ -237,8 +243,8 @@ public class SculkMobManager implements Listener {
                     if (currentTime - spawnTime >= maxLifetime) {
                         // Знаходимо та видаляємо зомбі
                         for (Entity entity : plugin.getServer().getWorlds().get(0).getEntities()) {
-                            if (entity.getUniqueId().equals(zombieId) && entity instanceof Zombie) {
-                                entity.remove();
+                            if (entity.getUniqueId().equals(zombieId) && entity instanceof LivingEntity living) {
+                                living.damage(living.getHealth());
                                 break;
                             }
                         }

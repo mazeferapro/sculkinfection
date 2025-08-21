@@ -63,22 +63,42 @@ public class SculkMobManager implements Listener {
      * Обробляє спавн від Sculk Shrieker
      */
     @EventHandler
-    public void onShriekerRedstone(BlockRedstoneEvent event) {
-        Block block = event.getBlock();
+    public void onPlayerNearShrieker(PlayerMoveEvent event) {
+        if (!configManager.isPluginEnabled()) {
+            return;
+        }
 
-        if (block.getType() != Material.SCULK_SHRIEKER) return;
+        Player player = event.getPlayer();
 
-        // сигнал змінився з 0 на >0
-        if (event.getOldCurrent() == 0 && event.getNewCurrent() > 0) {
-            String blockKey = getBlockKey(block.getLocation());
-            long currentTime = System.currentTimeMillis();
-            long cooldownTime = (long) configManager.getShriekerCooldownMinutes() * 60 * 1000;
+        if (player.isSneaking()) {
+            return;
+        }
 
-            if (!shriekerCooldowns.containsKey(blockKey) ||
-                    currentTime - shriekerCooldowns.get(blockKey) >= cooldownTime) {
+        Location playerLoc = player.getLocation();
 
-                shriekerCooldowns.put(blockKey, currentTime);
-                spawnInfectedZombie(block.getLocation(), 4);
+        for (int x = -3; x <= 3; x++) {
+            for (int y = -2; y <= 2; y++) {
+                for (int z = -3; z <= 3; z++) {
+                    Location checkLoc = playerLoc.clone().add(x, y, z);
+                    Block block = checkLoc.getBlock();
+
+                    if (block.getType() == Material.SCULK_SHRIEKER) {
+                        String blockKey = getBlockKey(block.getLocation());
+                        long currentTime = System.currentTimeMillis();
+                        long cooldownTime = configManager.getShriekerCooldownMinutes() * 60 * 1000;
+
+                        // Перевіряємо кулдаун
+                        if (!shriekerCooldowns.containsKey(blockKey) ||
+                                currentTime - shriekerCooldowns.get(blockKey) >= cooldownTime) {
+
+                            // Оновлюємо кулдаун
+                            shriekerCooldowns.put(blockKey, currentTime);
+
+                            // Спавнимо 4 зомбі
+                            spawnInfectedZombie(block.getLocation(), 4);
+                        }
+                    }
+                }
             }
         }
     }

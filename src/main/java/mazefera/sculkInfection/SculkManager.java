@@ -14,6 +14,7 @@ public class SculkManager {
     private final JavaPlugin plugin;
     private final ConfigManager configManager;
     private final VisualEffectsManager visualEffects;
+    private SculkMobManager mobManager; // Додано
     private final Random random = new Random();
 
     // Список блоків, які можуть бути замінені на Sculk
@@ -32,6 +33,11 @@ public class SculkManager {
         this.plugin = plugin;
         this.configManager = configManager;
         this.visualEffects = visualEffects;
+    }
+
+    // Додано метод для встановлення MobManager
+    public void setMobManager(SculkMobManager mobManager) {
+        this.mobManager = mobManager;
     }
 
     /**
@@ -81,6 +87,11 @@ public class SculkManager {
                 // Якщо блок став звичайним Sculk, спробувати створити спеціальні блоки
                 if (block.getType() == Material.SCULK) {
                     tryCreateSpecialSculkOnSculkBlock(block);
+
+                    // НОВИЙ КОД: Спроба заспавнити зомбі на блоці sculk
+                    if (mobManager != null) {
+                        mobManager.trySpawnZombieOnSculk(block.getLocation());
+                    }
                 }
 
                 visualEffects.createInfectionEffect(block.getLocation());
@@ -121,13 +132,17 @@ public class SculkManager {
                         // Якщо блок став звичайним Sculk, спробувати створити спеціальні блоки
                         if (block.getType() == Material.SCULK) {
                             tryCreateSpecialSculkOnSculkBlock(block);
+
+                            // НОВИЙ КОД: Спроба заспавнити зомбі на блоці sculk
+                            if (mobManager != null) {
+                                mobManager.trySpawnZombieOnSculk(block.getLocation());
+                            }
                         }
 
                         // Візуальний ефект для кожного блока
                         visualEffects.createInfectionEffect(block.getLocation());
                     }
                 }
-
 
                 index = endIndex;
 
@@ -166,7 +181,7 @@ public class SculkManager {
     private boolean canConvertToSculk(Block block) {
         Material type = block.getType();
 
-        // Якщо дозволено заміняти всі блоки
+        // Якщо дозволено замінити всі блоки
         if (configManager.shouldReplaceAllBlocks()) {
             return !type.isAir() &&
                     type != Material.BEDROCK &&

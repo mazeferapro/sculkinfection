@@ -43,6 +43,17 @@ sculk-sensor-chance: 0.01
 # Відкалібровані сенсори блокують поширення Sculk в цьому радіусі
 calibrated-sensor-block-radius: 16
 
+# === НАЛАШТУВАННЯ МОБІВ ===
+
+# Шанс спавну зомбі на блоці sculk при його активації
+sculk-zombie-spawn-chance: 0.001
+
+# Кулдаун для спавну зомбі від Sculk Shrieker (в хвилинах)
+shrieker-cooldown-minutes: 2
+
+# Час життя заражених зомбі (в секундах)
+zombie-lifetime-seconds: 30
+
 # Додаткові налаштування (можна додати пізніше)
 settings:
   # Множник XP для збільшення радіусу поширення
@@ -58,3 +69,14 @@ settings:
   sounds:
     enabled: true
     volume: 0.8
+
+  # Налаштування мобів
+  mobs:
+    # Кількість зомбі що спавняться від Sculk Shrieker
+    shrieker-spawn-count: 4
+
+    # Множник слабкості зомбі (зомбі будуть слабшими в X разів)
+    zombie-weakness-multiplier: 10
+
+    # Радіус відходження зомбі від зони sculk
+    zombie-escape-radius: 10

@@ -117,4 +117,33 @@ public class ConfigManager {
         config.set("calibrated-sensor-block-radius", radius);
         plugin.saveConfig();
     }
+
+    // === НАЛАШТУВАННЯ ДЛЯ МОБІВ ===
+
+    public double getSculkZombieSpawnChance() {
+        return config.getDouble("sculk-zombie-spawn-chance", 0.001);
+    }
+
+    public void setSculkZombieSpawnChance(double chance) {
+        config.set("sculk-zombie-spawn-chance", chance);
+        plugin.saveConfig();
+    }
+
+    public int getShriekerCooldownMinutes() {
+        return config.getInt("shrieker-cooldown-minutes", 2);
+    }
+
+    public void setShriekerCooldownMinutes(int minutes) {
+        config.set("shrieker-cooldown-minutes", minutes);
+        plugin.saveConfig();
+    }
+
+    public int getZombieLifetimeSeconds() {
+        return config.getInt("zombie-lifetime-seconds", 30);
+    }
+
+    public void setZombieLifetimeSeconds(int seconds) {
+        config.set("zombie-lifetime-seconds", seconds);
+        plugin.saveConfig();
+    }
 }

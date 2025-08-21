@@ -93,7 +93,7 @@ public class SculkMobManager implements Listener {
             if (spawnLoc == null) continue;
 
             // Створюємо зомбі
-            Zombie zombie = (Zombie) spawnLoc.getWorld().spawnEntity(spawnLoc, EntityType.HUSK);
+            Zombie zombie = (Zombie) spawnLoc.getWorld().spawnEntity(spawnLoc, EntityType.ZOMBIE);
 
             // Налаштовуємо зомбі
             setupInfectedZombie(zombie);
